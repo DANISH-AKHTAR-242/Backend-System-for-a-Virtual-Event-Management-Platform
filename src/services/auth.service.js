@@ -1,33 +1,44 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+
+const User = require("../models/User");
+const HttpError = require("../utils/httpError");
 const { JWT_SECRET } = require("../config/config");
-const users = require("../data/users");
-const { v4: uuid } = require("uuid");
+
+const ensureJwtSecret = () => {
+  if (!JWT_SECRET) {
+    throw new Error("JWT_SECRET is not configured");
+  }
+};
 
 exports.registerUser = async ({ name, email, password, role }) => {
-  const existing = users.find(u => u.email === email);
-  if (existing) throw new Error("User already exists");
+  const existing = await User.findOne({ email });
+  if (existing) throw new HttpError(409, "User already exists");
 
-  const hashed = await bcrypt.hash(password, 10);
-
-  const user = {
-    id: uuid(),
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const user = await User.create({
     name,
     email,
-    password: hashed,
-    role: role || "attendee"
-  };
+    password: hashedPassword,
+    role,
+  });
 
-  users.push(user);
-  return user;
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
 };
 
 exports.loginUser = async ({ email, password }) => {
-  const user = users.find(u => u.email === email);
-  if (!user) throw new Error("Invalid credentials");
+  ensureJwtSecret();
+
+  const user = await User.findOne({ email });
+  if (!user) throw new HttpError(401, "Invalid credentials");
 
   const valid = await bcrypt.compare(password, user.password);
-  if (!valid) throw new Error("Invalid credentials");
+  if (!valid) throw new HttpError(401, "Invalid credentials");
 
   const token = jwt.sign(
     { id: user.id, role: user.role },
@@ -35,5 +46,13 @@ exports.loginUser = async ({ email, password }) => {
     { expiresIn: "4h" }
   );
 
-  return token;
+  return {
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  };
 };

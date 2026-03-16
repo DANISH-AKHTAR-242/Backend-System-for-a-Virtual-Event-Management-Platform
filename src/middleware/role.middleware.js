@@ -1,6 +1,11 @@
-module.exports = role => (req, res, next) => {
+const HttpError = require("../utils/httpError");
+
+module.exports = (role) => (req, _res, next) => {
+  if (!req.user) {
+    return next(new HttpError(401, "Unauthorized"));
+  }
   if (req.user.role !== role) {
-    return res.status(403).json({ message: "Forbidden" });
+    return next(new HttpError(403, "Forbidden"));
   }
   next();
 };
