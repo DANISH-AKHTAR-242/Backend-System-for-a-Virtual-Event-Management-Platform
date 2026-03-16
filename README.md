@@ -1,61 +1,98 @@
 # Virtual Event Management Platform - Backend
 
-A robust and scalable backend system for managing virtual events, registrations, and user interactions. Built entirely in JavaScript, this API serves as the foundation for modern event-management applications.
+Production-ready REST API for managing virtual events, registrations, and authentication. Built with Express and MongoDB, structured with controllers, services, and middleware layers.
 
-## 🚀 Overview
+## 1) Problems previously identified
+- Inconsistent layering (unused in-memory services, logic in controllers).
+- Missing request validation and weak error handling.
+- Authentication middleware accepted non-Bearer tokens; no 404 handler.
+- No environment contract, Docker assets, or automated tests.
+- Logging not integrated with error flow.
 
-This backend handles the core business logic, including user authentication, event scheduling, attendee management, and data flow. It is optimized to be seamlessly consumed by modern frontend architectures, such as a Next.js or React client dashboard.
+## 2) Current architecture
+- **Framework:** Express 5 (CommonJS)
+- **Database:** MongoDB via Mongoose models (`User`, `Event`)
+- **Layers:**
+  - **Routes** → **Controllers** → **Services** → **Models**
+  - **Middleware:** auth, role-based access, rate limiting, error/not-found, security headers, async handler
+  - **Utilities:** structured logger, HttpError class, payload validators
+- **Config:** Centralized in `src/config/config.js` with env validation and defaults for local/test.
 
-## 🛠️ Technology Stack
+## 3) Suggested/implemented architecture improvements
+- Thin controllers delegating to services with consistent HttpError usage.
+- Input validation for auth and event flows (email format, password length, ObjectId checks, date validation).
+- Unified error logging and consistent JSON error responses; 404 fallback.
+- Security headers, rate limiting, bearer token enforcement, and role checks.
+- Dockerfile + docker-compose for local dev with Mongo.
+- Example env file and project structure documented.
 
-* **Runtime:** Node.js
-* **Language:** JavaScript 
-* **Framework:** Express.js 
-* **Database Management:** MongoDB or PostgreSQL (compatible with modern ORMs like Prisma)
-* **Authentication:** JSON Web Tokens (JWT)
+## 4) Getting started
+### Prerequisites
+- Node.js 20+
+- MongoDB running locally or via Docker Compose
 
-## 📦 Installation & Setup
+### Environment
+Copy the sample and adjust values:
+```bash
+cp .env.example .env
+```
 
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com/DANISH-AKHTAR-242/Backend-System-for-a-Virtual-Event-Management-Platform.git](https://github.com/DANISH-AKHTAR-242/Backend-System-for-a-Virtual-Event-Management-Platform.git)
-   cd Backend-System-for-a-Virtual-Event-Management-Platform
-   ```
+### Install & run
+```bash
+npm install
+npm run dev   # nodemon (requires nodemon globally) or
+npm start     # node src/server.js
+```
 
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+### Docker (recommended for local dev)
+```bash
+docker compose up --build
+```
+API available at `http://localhost:3000`.
 
-3. **Configure Environment Variables:**
-   Create a `.env` file in the root directory and define the essential variables:
-   ```env
-   PORT=3000
-   DATABASE_URL="your_database_connection_string"
-   JWT_SECRET="your_jwt_secret"
-   ```
+### Tests
+Lightweight validation tests (Node test runner):
+```bash
+npm test
+```
 
-4. **Start the development server:**
-   ```bash
-   npm run dev
-   ```
+## 5) API (REST)
+- `POST /api/auth/register` – create user (`name`, `email`, `password`>=8, `role` optional `organizer|attendee`)
+- `POST /api/auth/login` – returns JWT + user
+- `GET /api/events` – list events
+- `POST /api/events` – create event (organizers only; Bearer token)
+- `POST /api/events/:eventId/register` – register attendee for event
 
-## 🗺️ Future Roadmap & Enhancements
+Responses are JSON with appropriate HTTP status codes. Errors include `message` and stack trace in development.
 
-To expand the platform's capabilities, the following features are excellent candidates for future iterations:
-* **AI Integration:** Implementing smart, AI-driven event recommendations based on user interests, or utilizing language models for automated Q&A moderation during live sessions.
-* **Generative Media:** Dynamically generating custom promotional artwork for events or unique 3D avatars for virtual attendees.
-* **Containerization:** Preparing the application for scalable deployment on cloud platforms or spaces like Hugging Face using Docker.
-* **Real-Time Communication:** Integrating WebSockets to support live chat and interactive polling features.
+## 6) Security & validation highlights
+- Bearer token enforcement with JWT verification.
+- Role-based authorization middleware.
+- Rate limiting (100 requests / 15 minutes).
+- Basic security headers and disabled `x-powered-by`.
+- Strict input validation for auth and event payloads plus ObjectId checks.
 
-## 🤝 Contributing
+## 7) Project structure
+```
+src/
+  app.js              # Express app wiring
+  server.js           # Bootstrap + DB connection
+  config/             # Env + Mongo config
+  controllers/        # HTTP handlers
+  services/           # Business logic
+  models/             # Mongoose schemas
+  middleware/         # Auth, roles, errors, etc.
+  utils/              # Logger, HttpError
+  validators/         # Request validation helpers
+```
 
-Contributions, issues, and feature requests are always welcome! Whether you're optimizing the backend API routes or building out a new connected frontend, feel free to open a pull request.
+## 8) Files added for production readiness
+- `.env.example` – required environment variables
+- `Dockerfile`, `docker-compose.yml`, `.dockerignore`
+- `tests/validators.test.js` – sanity checks for validators
 
-## 👨‍💻 Author
-
-**Danish** * GitHub: [@DANISH-AKHTAR-242](https://github.com/DANISH-AKHTAR-242)
-
-## 📄 License
-
-This project is open-source and available under the MIT License.
+## 9) Roadmap ideas
+- Add OpenAPI/Swagger docs
+- Introduce request/response schemas with Zod/celebrate
+- Add integration tests with mongodb-memory-server
+- CI workflow to run tests and lint on push

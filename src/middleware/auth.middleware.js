@@ -1,9 +1,13 @@
 const jwt = require("jsonwebtoken");
-const { JWT_SECRET } = require("../config/config");
 
-module.exports = (req, res, next) => {
+const { JWT_SECRET } = require("../config/config");
+const HttpError = require("../utils/httpError");
+
+module.exports = (req, _res, next) => {
   const header = req.headers.authorization;
-  if (!header) return res.status(401).json({ message: "Unauthorized" });
+  if (!header || !header.startsWith("Bearer ")) {
+    return next(new HttpError(401, "Unauthorized"));
+  }
 
   const token = header.split(" ")[1];
 
@@ -12,6 +16,6 @@ module.exports = (req, res, next) => {
     req.user = decoded;
     next();
   } catch {
-    res.status(401).json({ message: "Invalid token" });
+    next(new HttpError(401, "Invalid token"));
   }
 };
