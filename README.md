@@ -46,6 +46,7 @@ npm start     # node src/server.js
 
 ### Docker (recommended for local dev)
 ```bash
+export JWT_SECRET=your-secure-secret
 docker compose up --build
 ```
 API available at `http://localhost:3000`.

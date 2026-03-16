@@ -17,7 +17,7 @@ exports.validateCreateEventPayload = (body) => {
   const description =
     typeof body.description === "string" ? body.description.trim() : "";
 
-  const dateValue = body.date || body.datetime;
+  const dateValue = body.date;
   const date = dateValue ? new Date(dateValue) : null;
 
   if (!date || Number.isNaN(date.getTime())) {

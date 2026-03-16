@@ -3,10 +3,11 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 const NODE_ENV = process.env.NODE_ENV || "development";
+const isTest = NODE_ENV === "test";
 
 const requiredVars = ["JWT_SECRET", "MONGO_URI"];
 const missingVars = requiredVars.filter(
-  (key) => !process.env[key] && NODE_ENV !== "test"
+  (key) => !process.env[key] && !isTest
 );
 
 if (missingVars.length) {
@@ -24,7 +25,9 @@ if (Number.isNaN(PORT)) {
 module.exports = {
   NODE_ENV,
   PORT,
-  JWT_SECRET: process.env.JWT_SECRET || "test-secret",
+  JWT_SECRET:
+    process.env.JWT_SECRET || (isTest ? "test-secret" : undefined),
   MONGO_URI:
-    process.env.MONGO_URI || "mongodb://localhost:27017/virtual-events",
+    process.env.MONGO_URI ||
+    (isTest ? "mongodb://localhost:27017/virtual-events" : undefined),
 };
